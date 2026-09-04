@@ -125,6 +125,10 @@ footer{padding:28px 20px;display:flex;flex-direction:column;gap:4px;
 <script>
 // スライスの境界を、そのまま計測の閾値に使う（画像LPの構造的な利点）
 window.dataLayer = window.dataLayer || [];
+// GA4へ直接送る。GTMで Google タグ（gtag.js）が読み込まれていれば、
+// 同じ dataLayer を gtag.js が読むので、GTM側にイベントタグを作らなくても届く。
+// ※ arguments オブジェクトには .event が無いため GTM 側は無視する（二重計上しない）
+function gtag() { window.dataLayer.push(arguments); }
 (function () {
   var seen = {};
   // rootMargin で「画面の中央線を越えたか」を見る。
@@ -136,14 +140,17 @@ window.dataLayer = window.dataLayer || [];
       var el = e.target, k = el.dataset.name;
       if (seen[k]) return;
       seen[k] = 1;
-      window.dataLayer.push({event: 'lp_section_view', section: k,
-                             depth_percent: Number(el.dataset.depth)});
+      var payload = {section: k, depth_percent: Number(el.dataset.depth)};
+      window.dataLayer.push(Object.assign({event: 'lp_section_view'}, payload));
+      gtag('event', 'lp_section_view', payload);
     });
   }, {rootMargin: '-50% 0px -50% 0px', threshold: 0});
   document.querySelectorAll('.sec').forEach(function (s) { io.observe(s); });
   document.querySelectorAll('[data-cta]').forEach(function (a) {
     a.addEventListener('click', function () {
-      window.dataLayer.push({event: 'lp_cta_click', cta_position: a.dataset.cta});
+      var p = {cta_position: a.dataset.cta};
+      window.dataLayer.push(Object.assign({event: 'lp_cta_click'}, p));
+      gtag('event', 'lp_cta_click', p);
     });
   });
 })();
